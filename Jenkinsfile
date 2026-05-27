@@ -50,14 +50,34 @@ pipeline {
                         sh "docker rmi $IMAGEN:latest"
                     }
                 }
+                stage('Docker Deploy') {
+                    steps {
+                        withCredentials([usernamePassword(credentialsId: 'VPS', usernameVariable: 'VPS_USER', passwordVariable: 'VPS_PASS')]) {
+                            
+                            echo "Preparando directorio y enviando docker-compose.yaml a la VPS interna (192.168.0.3)..."
+                            sh "sshpass -p '$VPS_PASS' ssh -o StrictHostKeyChecking=no \$VPS_USER@192.168.0.3 'mkdir -p /home/\$VPS_USER/app'"
+                            sh "sshpass -p '$VPS_PASS' scp -o StrictHostKeyChecking=no docker-compose.yaml \$VPS_USER@192.168.0.3:/home/\$VPS_USER/app/"
+
+                            echo "Recreando el entorno de producción con la nueva imagen..."
+                            sh """
+                            sshpass -p '$VPS_PASS' ssh -o StrictHostKeyChecking=no \$VPS_USER@192.168.0.3 "
+                                cd /home/\$VPS_USER/app/ &&
+                                docker compose down &&
+                                docker compose pull &&
+                                docker compose up -d
+                            "
+                            """
+                        }
+                    }
+                }
             }
         }
     }
     post {
-         always {
-          mail to: 'danibacorro@gmail.com',
-          subject: "Status of pipeline: ${currentBuild.fullDisplayName}",
-          body: "${env.BUILD_URL} has result ${currentBuild.result}"
+        always {
+            mail to: 'danibacorro@gmail.com',
+            subject: "Status of pipeline: ${currentBuild.fullDisplayName}",
+            body: "${env.BUILD_URL} has result ${currentBuild.result}"
         }
-      }
+    }
 }
