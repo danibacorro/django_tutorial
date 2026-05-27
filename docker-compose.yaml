@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  django_app:
+    image: danibacorro/django_ic:latest
+    container_name: django_production
+    ports:
+      - "80:8000"
+    restart: always
+    environment:
+      - DEBUG=False
