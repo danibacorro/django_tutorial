@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slimççç
 
 RUN apt-get update && apt-get install -y \
     default-mysql-client \
